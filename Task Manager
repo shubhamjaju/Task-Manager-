@@ -1,0 +1,160 @@
+ 
+#Program for task manager
+from Tkinter import *
+from time import time,sleep
+import Tkinter as tk  # gives tk namespace
+import os
+
+# chem_list
+
+def add_item():
+    """Run the process name specified """
+    text=enter1.get()
+    os.system(text)
+    
+def end_item():
+    """
+    delete a selected process from the system and from listbox
+    """
+    try:
+        # get selected line index
+        index = listbox1.curselection()[0]
+        text=listbox1.get(index).split("Running")
+        f=str(text[1])
+        os.system('pkill '+f)
+        listbox1.delete(index)
+    except IndexError:
+        pass
+ 
+def get_list(event):
+    """
+    function to read the listbox selection
+    and put the result in an entry widget
+    """
+    # get selected line index
+    index = listbox1.curselection()[0]
+    # get the line's text
+    seltext = listbox1.get(index)
+    # delete previous text in enter1
+    enter1.delete(0, 50)
+    # now display the selected text
+    enter1.insert(0, seltext)
+
+def set_list(event):
+    """
+    insert an edited line from the entry widget
+    back into the listbox
+    """
+    try:
+        index = listbox1.curselection()[0]
+        # delete old listbox line
+        listbox1.delete(index)
+    except IndexError:
+        index = tk.END
+    # insert edited item back into listbox1 at index
+    listbox1.insert(index, enter1.get())
+
+def sort_list():
+    """
+    function to sort listbox items case insensitive
+    """
+    temp_list = list(listbox1.get(0, tk.END))
+    temp_list.sort(key=str.lower)
+    # delete contents of present listbox
+    listbox1.delete(0, tk.END)
+    # load listbox with sorted data
+    for item in temp_list:
+        listbox1.insert(tk.END, item)
+
+def save_list():
+    """
+    save the current listbox contents to a file
+    """
+    # get a list of listbox lines
+    temp_list = list(listbox1.get(0, tk.END))
+    # add a trailing newline char to each line
+    temp_list = [chem + '\n' for chem in temp_list]
+    # give the file a different name
+    fout = open("PRO.txt", "w")
+    fout.writelines(temp_list)
+    fout.close()
+ 
+def start():
+    
+    global listbox1
+    #frame= tk.Frame(root, width= 1000, height= 700)
+    root.title("Listbox Operations")
+    # create the listbox (note that size is in characters)
+    listbox1 = tk.Listbox(root, width=50, height=15)
+    listbox1.grid(row=0, column=0)
+ 
+    # create a vertical scrollbar to the right of the listbox
+    yscroll = tk.Scrollbar(command=listbox1.yview, orient=tk.VERTICAL)
+    yscroll.grid(row=0, column=1, sticky=tk.N+tk.S)
+    listbox1.configure(yscrollcommand=yscroll.set)
+ 
+    # use entry widget to display/edit selection
+   
+    # button to sort listbox  
+    button1 = tk.Button(root, text='Sort the processes ', command=sort_list)
+    button1.grid(row=2, column=0, sticky=tk.W)
+
+    # button to save the listbox's data lines to a file
+    button2 = tk.Button(root, text='Save lines to file', command=save_list)
+    button2.grid(row=3, column=0, sticky=tk.W)
+
+    # button to run a process from the listbox
+    button3 = tk.Button(root, text='Run a process', command=add_item)
+    button3.grid(row=2, column=0, sticky=tk.E)
+
+    # button to end a process from listbox
+    button4 = tk.Button(root, text='End process', command=end_item)
+    button4.grid(row=3, column=0, sticky=tk.E)
+
+    # left mouse click on a list item to display selection
+
+    f=os.popen("top -b -n 1 | awk '{print $12,$9,$10;}'")
+    str1=f.read()
+    fout = open("process.txt", "w")
+    fout.write(str1)
+    fout.close()
+    # read the data file into a list
+    fin = open("process.txt", "r")
+    #fin.close()
+    #print("d,shdfdsdgsd")
+    chem_list= fin.readlines()
+    #print(chem_list)
+    fin.close()
+    # strip the trailing newline char
+    chem_list= [chem.rstrip() for chem in chem_list]
+    
+
+    # load the listbox with data
+    i=0
+    listbox1.insert(tk.END," %CPU        %MEM           Status          Process Name")
+    listbox1.itemconfig(0,bg='green')
+    for item in chem_list:
+       	i=i+1
+       	if i>7:
+            itemlist=item.split(" ")
+            x=itemlist[1]
+            listbox1.insert(tk.END,itemlist[1]+"            "+itemlist[2] +"              Running         "   + itemlist[0])
+            if float(x)>5.0:
+                listbox1.itemconfig(tk.END,bg='red')           
+            #print("Hello"+str(x))
+           
+    root.after(10000,start)  
+
+
+
+
+root=Tk()
+enter1 = tk.Entry(root, width=50, bg='yellow')
+enter1.insert(0,"")
+enter1.grid(row=1, column=0)
+# pressing the return key will update edited line
+enter1.bind('<Return>', set_list)
+# or double click left mouse button to update line
+enter1.bind('<Double-1>', set_list)
+root.after(1,start)
+root.mainloop()
